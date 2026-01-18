@@ -61,6 +61,39 @@ for i := 0; i < 3; i++ {
 }
 ```
 
+## Behavior tree example
+Leo can be used to create a behaviour tree. See `examples/behaviour_tree`
+
+```go
+graph := leo.TaskGraph()
+
+graph.MustAdd("Sense", func() error {
+    fmt.Println("Sense: looking for target")
+    return nil
+})
+
+graph.MustAddCondition("Decide", func() (int, error) {
+    // 0 = Combat sequence, 1 = Patrol
+    if rand.Intn(2) == 0 {
+        fmt.Println("Decide: engage")
+        return 0, nil
+    }
+    fmt.Println("Decide: patrol")
+    return 1, nil
+})
+
+graph.MustAdd("Chase", func() error { fmt.Println("Chase"); return nil })
+graph.MustAdd("Attack", func() error { fmt.Println("Attack"); return nil })
+graph.MustAdd("Patrol", func() error { fmt.Println("Patrol"); return nil })
+
+graph.Precede("Sense", "Decide")
+graph.Branch("Decide", "Chase", "Patrol")
+graph.Precede("Chase", "Attack")
+
+executor := leo.NewExecutor(graph)
+_ = executor.Execute()
+```
+
 ## Execution semantics
 - Tasks run when all their parents complete successfully.
 - With `FailFast`, no new tasks are scheduled after the first error (in-flight tasks still finish).
